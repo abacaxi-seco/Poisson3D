@@ -1,0 +1,14 @@
+name = "Poisson3D"
+uuid = "14eb52d9-3299-4569-afb5-07db7de1a24a"
+authors = ["Anna <173553840+abacaxi-seco@users.noreply.github.com>"]
+version = "0.1.0"
+
+[deps]
+ParallelStencil = "94395366-693c-11ea-3b26-d9b7aac5d958"
+Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
+WriteVTK = "64499a7a-5c06-52f2-abe2-ccb03c286192"
+
+[compat]
+ParallelStencil = "0.14.2"
+Plots = "1.40.16"
+WriteVTK = "1.21.2"
