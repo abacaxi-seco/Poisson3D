@@ -1,15 +1,15 @@
 using Plots, ParallelStencil, WriteVTK, Printf
 
-const USE_GPU = false
+const USE_GPU = false       # boolean to select if code runs on GPU or CPU
 const GPU_ID  = 0           # select the ID of the GPU in a multi-GPU system
 
 @static if USE_GPU
     @init_parallel_stencil(CUDA, Float64, 3);
 else
-    @init_parallel_stencil(Threads, Float64, 3);    # uses the cores
+    @init_parallel_stencil(Threads, Float64, 3);    # runs parallel on CPU cores
 end
 
-@parallel_indices (i,j,k) function InitialCondition!(u, c, r) # kernel automatically runs as a loop for the three indices
+@parallel_indices (i,j,k) function InitialCondition!(u, c, r) # kernel automatically runs as a loop for the three indices i, j, k
     if (c.x[i].^2 .+ c.y[j].^2 .+ c.z[k].^2) < r^2
         u[i,j,k] = 5.0
     else
@@ -34,6 +34,7 @@ end
 end
 
 @parallel_indices (i,j,k) function Update_u!(u, q, Δ, Δt)
+    # a lot of indices are shifted here to avoid the ghost cells
     if i <= size(u, 1)-2 && j <= size(u, 2)-2 && k <= size(u, 3)-2
         ∂q∂x = (q.x[i+1, j+1, k+1] - q.x[i, j+1, k+1]) / Δ.x
         ∂q∂y = (q.y[i+1, j+1, k+1] - q.y[i+1, j, k+1]) / Δ.y
@@ -57,8 +58,9 @@ function main()
         z = LinRange(-L.z/2 - Δ.z, L.z/2 + Δ.z, nc.z+2)
         )
 
-    # Allocate Arrays
-    u = @zeros(nc.x+2, nc.y+2, nc.z+2)   # @zeros is a ParallelStencil macro to allocate the memory depending on used GPU
+    #= Allocate Arrays
+    @zeros is a ParallelStencil macro to allocate the memory depending on used GPU =#
+    u = @zeros(nc.x+2, nc.y+2, nc.z+2) 
     q = (
         x = @zeros(nc.x+1, nc.y+2, nc.z+2),
         y = @zeros(nc.x+2, nc.y+1, nc.z+2),
@@ -72,27 +74,27 @@ function main()
 
     # Initial Condition
     r = 0.1   # radius of the sphere
-    # launch kernel to set values of u
+    # launch kernel to set initial values of u
     @parallel InitialCondition!(u, c, r)
 
     # Time
-    # min(Δ...) does the same as minimum(Δ)
+    # min(Δ...) or minimum(Δ)
     Δt = min(Δ...)^2 / D0 / 6.1
     nt = 1e2
 
     for it = 1:nt
-        # set BC (or don't)
+        # set BC (or don't...?)
         # compute q
         @parallel ComputeFluxes!(q, u, D, Δ)
         # update u
         @parallel Update_u!(u, q, Δ, Δt)
 
-        p1 = heatmap(c.x, c.y, u[:,:, Int64(round(nc.z/2))], aspect_ratio=1, xlims=(-L.x/2,L.x/2))
+        # Visualization and Output as VTK
+        if mod(it, 10) == 0
+            p1 = heatmap(c.x, c.y, u[:,:, Int64(round(nc.z/2))], aspect_ratio=1, xlims=(-L.x/2,L.x/2))
         display(plot(p1))
 
-        filename = @sprintf("Output%04d", it)
-        # print(filename)
-        if mod(it, 10) == 0
+            filename = @sprintf("Output%04d", it)
             vtk_grid(filename, c.x, c.y, c.z) do vtk
                 vtk["u"] = u
             end
