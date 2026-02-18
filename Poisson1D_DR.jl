@@ -50,7 +50,7 @@ function main()
         q .= -k .* diff(u)/Δx
 
         # Evaluate residual
-        r .= - diff(q)/Δx .+ b
+        r .= - (diff(q)/Δx .+ b)
 
         # Update ∂u∂τ
         ∂u∂τ .= β .* r .+ α .* ∂u∂τ

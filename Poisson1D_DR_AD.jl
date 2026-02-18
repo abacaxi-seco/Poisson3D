@@ -31,13 +31,7 @@ function compute_residual(u, b, r0, BC, Δx, k, deriv, i)
     end
     return out
 end
-# function update_residual(u, b, r, r0, Δx, BC, k, deriv)
-#     for i = 2:size(u)[1]-1
-#         result = compute_residual(u, b, r, Δx, BC, k, deriv, i)
-#         r[i-1] = result[1]
-#         r0[i-1] = result[2]
-#     end
-# end
+
 function update_field(a, b, func, args)
     for i = 2:size(a)[1]-1 # skip ghosts
         result = func(args..., i)
