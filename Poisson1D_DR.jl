@@ -79,8 +79,8 @@ function main()
         end
     end
     # Visualization
-    p1 = plot(xce, u)
-    p2 = plot(xce[2:end-1], b)
+    p1 = plot(xce, u, label="u", title="Poisson 1D with DR")
+    p2 = plot(xce[2:end-1], b, label="b")
     display(plot(p1,p2))
     sleep(0.1)
 end
